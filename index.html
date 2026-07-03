@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Cuci Motor & Rekap</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        /* Tab Navigasi */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: #e5e7eb;
+            color: #4b5563;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+        /* Kartu Konten */
+        .card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none; /* Sembunyikan default */
+        }
+        .card.active {
+            display: block; /* Tampilkan yang aktif */
+        }
+        h2 {
+            text-align: center;
+            color: #1f2937;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        /* Form Kasir */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #4b5563; font-size: 14px; }
+        input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+        .checkbox-group { background: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb; }
+        .checkbox-item { display: flex; align-items: center; margin-bottom: 8px; }
+        .checkbox-item input { margin-right: 10px; width: 16px; height: 16px; }
+        .total-box { background: #ecfdf5; padding: 15px; border-radius: 6px; margin-top: 20px; text-align: right; border: 1px solid #a7f3d0; }
+        .total-box .price { font-size: 24px; font-weight: bold; color: #059669; display: block; margin-top: 5px; }
+        .btn-submit { width: 100%; padding: 12px; background-color: #10b981; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        
+        /* Area Rekap */
+        .recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .recap-box { background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
+        .recap-box h4 { margin: 0 0 5px 0; color: #1e3a8a; font-size: 14px; }
+        .recap-box .amount { font-size: 20px; font-weight: bold; color: #2563eb; }
+        
+        /* Tabel Riwayat */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; color: #4b5563; }
+        .empty-state { text-align: center; padding: 20px; color: #6b7280; font-style: italic; }
+        .btn-clear { width: 100%; padding: 10px; background-color: #ef4444; color: white; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('kasir')">Area Kasir</button>
+            <button class="tab-btn" onclick="switchTab('rekap')">Rekap Data</button>
+        </div>
+
+        <div id="kasir" class="card active">
+            <h2>Buat Pesanan Baru</h2>
+            <form id="orderForm">
+                <div class="form-group">
+                    <label>Nama Pelanggan</label>
+                    <input type="text" id="customerName" placeholder="Masukkan nama" required>
+                </div>
+                <div class="form-group">
+                    <label>Plat Nomor</label>
+                    <input type="text" id="licensePlate" placeholder="Contoh: B 1234 ABC" required>
+                </div>
+                <div class="form-group">
+                    <label>Jenis Motor</label>
+                    <select id="motorType" onchange="calculateTotal()">
+                        <option value="0" disabled selected>-- Pilih Jenis Motor --</option>
+                        <option value="15000">Motor Kecil / Matic (Rp 15.000)</option>
+                        <option value="20000">Motor Sedang / Sport (Rp 20.000)</option>
+                        <option value="30000">Motor Besar / Moge (Rp 30.000)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipe Cuci</label>
+                    <select id="washType" onchange="calculateTotal()">
+                        <option value="0">Reguler Wash (+ Rp 0)</option>
+                        <option value="15000">Premium Wash (+ Rp 15.000)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Menu Tambahan (Cinematic Video)</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="addonReguler" value="50000" onchange="calculateTotal()">
+                            <label for="addonReguler">Cinematic Reguler (+ Rp 50.000)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="addonPremium" value="100000" onchange="calculateTotal()">
+                            <label for="addonPremium">Cinematic Premium (+ Rp 100.000)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="total-box">
+                    <span>Total Pembayaran:</span>
+                    <div class="price" id="totalPriceDisplay">Rp 0</div>
+                </div>
+
+                <input type="hidden" id="rawTotalAmount" value="0">
+
+                <button type="button" class="btn-submit" onclick="submitOrder()">Simpan Transaksi</button>
+            </form>
+        </div>
+
+        <div id="rekap" class="card">
+            <h2>Rekap Pemasukan</h2>
+            
+            <div class="recap-grid">
+                <div class="recap-box">
+                    <h4>7 Hari Terakhir</h4>
+                    <div class="amount" id="recapWeekly">Rp 0</div>
+                </div>
+                <div class="recap-box">
+                    <h4>Bulan Ini</h4>
+                    <div class="amount" id="recapMonthly">Rp 0</div>
+                </div>
+            </div>
+
+            <h4 style="margin-bottom: 10px; color: #4b5563;">Riwayat Transaksi</h4>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Pelanggan</th>
+                            <th>Plat</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody">
+                        </tbody>
+                </table>
+            </div>
+            
+            <button class="btn-clear" onclick="clearData()">Hapus Semua Data</button>
+        </div>
+    </div>
+
+    <script>
+        // FUNGSI NAVIGASI TAB
+        function switchTab(tabId) {
+            document.querySelectorAll('.card').forEach(card => card.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+
+            // Jika tab rekap dibuka, perbarui datanya
+            if (tabId === 'rekap') {
+                generateRecap();
+            }
+        }
+
+        // FUNGSI FORMAT RUPIAH
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
+
+        // FUNGSI HITUNG TOTAL KASIR
+        function calculateTotal() {
+            let motorTypePrice = parseInt(document.getElementById('motorType').value) || 0;
+            let washTypePrice = parseInt(document.getElementById('washType').value) || 0;
+            let addonRegPrice = document.getElementById('addonReguler').checked ? parseInt(document.getElementById('addonReguler').value) : 0;
+            let addonPremPrice = document.getElementById('addonPremium').checked ? parseInt(document.getElementById('addonPremium').value) : 0;
+
+            let total = motorTypePrice + washTypePrice + addonRegPrice + addonPremPrice;
+
+            document.getElementById('rawTotalAmount').value = total;
+            document.getElementById('totalPriceDisplay').innerText = formatRupiah(total);
+        }
+
+        // FUNGSI SIMPAN TRANSAKSI KE LOCALSTORAGE
+        function submitOrder() {
+            let name = document.getElementById('customerName').value;
+            let plate = document.getElementById('licensePlate').value;
+            let motorValue = document.getElementById('motorType').value;
+            let totalAmount = parseInt(document.getElementById('rawTotalAmount').value);
+
+            if (!name || !plate || motorValue === "0") {
+                alert("Mohon lengkapi Nama, Plat Nomor, dan Jenis Motor!");
+                return;
+            }
+
+            // Buat objek transaksi dengan timestamp waktu saat ini
+            const transaction = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                name: name,
+                plate: plate,
+                total: totalAmount
+            };
+
+            // Ambil data lama dari localStorage (jika ada), lalu tambahkan data baru
+            let db = JSON.parse(localStorage.getItem('wash_transactions')) || [];
+            db.push(transaction);
+            localStorage.setItem('wash_transactions', JSON.stringify(db));
+
+            alert("Transaksi berhasil disimpan!");
+            
+            // Reset form
+            document.getElementById('orderForm').reset();
+            calculateTotal();
+        }
+
+        // FUNGSI MEMBACA DAN MENGHITUNG REKAP DATA
+        function generateRecap() {
+            let db = JSON.parse(localStorage.getItem('wash_transactions')) || [];
+            
+            let totalWeekly = 0;
+            let totalMonthly = 0;
+            let tableHTML = '';
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            // Waktu 7 hari yang lalu dalam milidetik
+            const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+
+            // Balik array agar transaksi terbaru ada di paling atas
+            db.reverse().forEach(trx => {
+                const trxDate = new Date(trx.date);
+
+                // Hitung Bulan Ini
+                if (trxDate.getMonth() === currentMonth && trxDate.getFullYear() === currentYear) {
+                    totalMonthly += trx.total;
+                }
+
+                // Hitung 7 Hari Terakhir
+                if (trxDate.getTime() >= sevenDaysAgo) {
+                    totalWeekly += trx.total;
+                }
+
+                // Format tanggal untuk tabel (DD/MM/YYYY)
+                const dateStr = trxDate.toLocaleDateString('id-ID');
+
+                // Tambahkan baris ke tabel
+                tableHTML += `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${trx.name}</td>
+                        <td>${trx.plate}</td>
+                        <td>${formatRupiah(trx.total)}</td>
+                    </tr>
+                `;
+            });
+
+            // Tampilkan ke HTML
+            document.getElementById('recapWeekly').innerText = formatRupiah(totalWeekly);
+            document.getElementById('recapMonthly').innerText = formatRupiah(totalMonthly);
+            
+            if (db.length === 0) {
+                document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="4" class="empty-state">Belum ada transaksi</td></tr>';
+            } else {
+                document.getElementById('transactionTableBody').innerHTML = tableHTML;
+            }
+        }
+
+        // FUNGSI HAPUS SEMUA DATA (RESET)
+        function clearData() {
+            if (confirm("Apakah Anda yakin ingin menghapus SEMUA data transaksi? Data tidak bisa dikembalikan.")) {
+                localStorage.removeItem('wash_transactions');
+                generateRecap();
+                alert("Data berhasil dihapus.");
+            }
+        }
+    </script>
+</body>
+</html>
